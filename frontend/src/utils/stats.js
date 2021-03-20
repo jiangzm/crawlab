@@ -1,7 +1,8 @@
-import axios from 'axios'
+// import axios from 'axios'
 
 const sendEvCrawlab = async(eventCategory, eventAction, eventLabel) => {
-  await axios.get(process.env.VUE_APP_CRAWLAB_BASE_URL + '/track', {
+  console.log(eventCategory, eventAction, eventLabel)
+  /* await axios.get(process.env.VUE_APP_CRAWLAB_BASE_URL + '/track', {
     params: {
       uid: localStorage.getItem('uid'),
       sid: sessionStorage.getItem('sid'),
@@ -10,7 +11,7 @@ const sendEvCrawlab = async(eventCategory, eventAction, eventLabel) => {
       el: eventLabel,
       v: sessionStorage.getItem('v')
     }
-  })
+  }) */
 }
 
 export default {

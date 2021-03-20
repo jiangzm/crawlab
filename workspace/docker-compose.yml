@@ -3,6 +3,7 @@ services:
   master:
     build:
       context: dockerfiles/golang
+    container_name: crawlab_master
     command: "air -c .air.conf"
     volumes:
       - ../backend:/backend
@@ -21,9 +22,10 @@ services:
       CRAWLAB_SERVER_REGISTER_TYPE: "customName"
       CRAWLAB_SERVER_REGISTER_CUSTOMNODENAME: "master_1"
       CRAWLAB_SERVER_PORT: 8000
-  worker-1:
+  worker:
     build:
       context: dockerfiles/golang
+    container_name: crawlab_work
     command: "air -c .air.conf"
     depends_on:
       - mongo
@@ -42,29 +44,10 @@ services:
       CRAWLAB_SERVER_PORT: 8001
       CRAWLAB_SERVER_REGISTER_TYPE: "customName"
       CRAWLAB_SERVER_REGISTER_CUSTOMNODENAME: "worker_1"
-  worker-2:
-    build:
-      context: dockerfiles/golang
-    command: "air -c .air.conf"
-    depends_on:
-      - mongo
-      - redis
-    ports:
-      - 8002:8000
-    volumes:
-      - ../backend:/backend
-    environment:
-      CRAWLAB_SPIDER_PATH: "/spiders"
-      CRAWLAB_MONGO_HOST: "mongo"
-      CRAWLAB_REDIS_ADDRESS: "redis"
-      CRAWLAB_SERVER_MASTER: "N"
-      CRAWLAB_SERVER_PORT: 8002
-      CRAWLAB_SERVER_REGISTER_TYPE: "customName"
-      CRAWLAB_SERVER_REGISTER_CUSTOMNODENAME: "worker_2"
   ui:
     build:
       context: ./dockerfiles/node
-    container_name: crawlab_frontend
+    container_name: crawlab_ui
     ports:
       - 8080:8080
     volumes:
@@ -80,6 +63,7 @@ services:
       - master
   mongo:
     image: mongo:latest
+    container_name: mongo
     restart: always
     # volumes:
     #   - "/opt/crawlab/mongo/data/db:/data/db"  # make data persistent 持久化
@@ -87,6 +71,7 @@ services:
       - "27017:27017"  # expose port to host machine 暴露接口到宿主机
   redis:
     image: redis:latest
+    container_name: redis
     restart: always
     # command: redis-server --requirepass "password" # set redis password 设置 Redis 密码
     # volumes:

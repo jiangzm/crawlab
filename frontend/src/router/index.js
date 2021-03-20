@@ -181,7 +181,7 @@ export const constantRouterMap = [
       }
     ]
   },
-  {
+  /*{
     path: '/repos',
     component: Layout,
     meta: {
@@ -199,7 +199,7 @@ export const constantRouterMap = [
         }
       }
     ]
-  },
+  },*/
   {
     path: '/disclaimer',
     component: Layout,
