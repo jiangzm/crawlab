@@ -1,23 +1,22 @@
-FROM golang:latest AS backend-build
+FROM golang:1.16 AS backend-build
 
 WORKDIR /go/src/app
 COPY ./backend .
 
 ENV GO111MODULE on
-ENV GOPROXY https://goproxy.io
+#ENV GOPROXY https://goproxy.io
 
-RUN go install -v ./...
+RUN go mod tidy \
+  && go install -v ./...
 
-FROM node:latest AS frontend-build
+FROM node:12 AS frontend-build
 
 ADD ./frontend /app
 WORKDIR /app
+RUN rm /app/.npmrc
 
 # install frontend
-#RUN npm config set unsafe-perm true
-#RUN npm install -g yarn && yarn install
-
-RUN yarn install && yarn run build:prod
+RUN yarn install && yarn run build:docker
 
 # images
 FROM ubuntu:latest
@@ -31,21 +30,31 @@ ENV CRAWLAB_IS_DOCKER Y
 # install packages
 RUN chmod 777 /tmp \
 	&& apt-get update \
-	&& apt-get install -y curl git net-tools iputils-ping ntp ntpdate python3 python3-pip nginx wget dumb-init cloc \
+	&& apt-get install -y curl git net-tools iputils-ping ntp ntpdate nginx wget dumb-init cloc
+
+# install python
+RUN apt-get install -y python3 python3-pip \
 	&& ln -s /usr/bin/pip3 /usr/local/bin/pip \
 	&& ln -s /usr/bin/python3 /usr/local/bin/python
 
+# install golang
+RUN curl -OL https://golang.org/dl/go1.16.7.linux-amd64.tar.gz \
+	&& tar -C /usr/local -xvf go1.16.7.linux-amd64.tar.gz \
+	&& ln -s /usr/local/go/bin/go /usr/local/bin/go
+
+# install seaweedfs
+RUN wget https://github.com/crawlab-team/resources/raw/main/seaweedfs/2.79/linux_amd64.tar.gz \
+  && tar -zxf linux_amd64.tar.gz \
+  && cp weed /usr/local/bin
 
 # install backend
-RUN pip install scrapy pymongo bs4 requests crawlab-sdk scrapy-splash
+RUN pip install scrapy pymongo bs4 requests
+RUN pip install crawlab-sdk==0.6.b20211224-1500
 
 # add files
 COPY ./backend/conf /app/backend/conf
-COPY ./backend/data /app/backend/data
-COPY ./backend/scripts /app/backend/scripts
-COPY ./backend/template /app/backend/template
 COPY ./nginx /app/nginx
-COPY ./docker_init.sh /app/docker_init.sh
+COPY ./bin /app/bin
 
 # copy backend files
 RUN mkdir -p /opt/bin
@@ -75,4 +84,4 @@ EXPOSE 8080
 EXPOSE 8000
 
 # start backend
-CMD ["/bin/bash", "/app/docker_init.sh"]
+CMD ["/bin/bash", "/app/bin/docker-init.sh"]

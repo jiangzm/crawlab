@@ -1,34 +1,68 @@
-'use strict'
-const path = require('path')
+const path = require("path")
+const CopyWebpackPlugin = require('copy-webpack-plugin')
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
-function resolve(dir) {
-  return path.join(__dirname, dir)
+const alias = {
+  'crawlab-ui$': 'crawlab-ui/dist/crawlab-ui.umd.min.js',
+  'element-plus$': 'element-plus/dist/index.full.min.js',
+  'echarts$': 'echarts/dist/echarts.min.js',
+  'codemirror$': 'codemirror/lib/codemirror.js',
 }
 
-const isDev = process.env.NODE_ENV === 'development'
-module.exports = {
-  // TODO: need to configure output static files with hash
-  lintOnSave: isDev,
+const optimization = {
+  splitChunks: {
+    chunks: 'initial',
+    minSize: 20000,
+    minChunks: 1,
+    maxAsyncRequests: 3,
+    cacheGroups: {
+      defaultVendors: {
+        test: /[\\/]node_modules[\\/]/,
+        priority: -10,
+        reuseExistingChunk: true,
+      },
+      default: {
+        minChunks: 2,
+        priority: -20,
+        reuseExistingChunk: true,
+      },
+    },
+  },
+}
 
-  productionSourceMap: false,
-
-  configureWebpack: {
-    // provide the app's title in webpack's name field, so that
-    // it can be accessed in index.html to inject the correct title.
-    // name: name,
-    devtool: 'source-map',
-    resolve: {
-      alias: {
-        '@': resolve('src')
-      }
+const config = {
+  pages: {
+    index: {
+      entry: 'src/main.ts',
+      template: 'public/index.html',
+      filename: 'index.html',
+      title: 'Crawlab | Distributed Web Crawler Platform'
     }
   },
-
-  chainWebpack: config => {
-
-  },
-
-  css: {
-    sourceMap: true
+  outputDir: './dist',
+  configureWebpack: {
+    optimization,
+    resolve: {
+      alias,
+    },
+    plugins: []
   }
 }
+
+if (['development', 'local'].includes(process.env.NODE_ENV)) {
+  // do nothing
+} else if (['production', 'docker'].includes(process.env.NODE_ENV)) {
+  config.configureWebpack.plugins.push(new CopyWebpackPlugin({
+    patterns: [
+      {
+        from: path.resolve(__dirname, 'public/js'),
+      }
+    ]
+  }))
+} else if (['analyze'].includes(process.env.NODE_ENV)) {
+  config.configureWebpack.plugins.push(new BundleAnalyzerPlugin({
+    analyzePort: 8890,
+  }))
+}
+
+module.exports = config
